@@ -14,7 +14,6 @@ class UserCount
       # TODO: Need to filter per channel
       append users: {
         time: Time.now.utc,
-        channel: m.channel.name,
         user: m.user.nick,
         action: "join"
       }
@@ -32,7 +31,6 @@ class UserCount
       # TODO: Need to filter per channel
       append users: {
         user: m.user.nick,
-        channel: m.channel.name,
         time: Time.now.utc,
         action: "leaving"
       }

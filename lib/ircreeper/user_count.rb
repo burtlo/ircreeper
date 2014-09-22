@@ -12,9 +12,10 @@ class UserCount
 
     def on_join(m)
       # TODO: Need to filter per channel
-      record users: {
-        user: m.user.nick,
+      append users: {
         time: Time.now.utc,
+        channel: m.channel.name,
+        user: m.user.nick,
         action: "join"
       }
 
@@ -29,8 +30,9 @@ class UserCount
 
     def on_leaving(m,user)
       # TODO: Need to filter per channel
-      record users: {
+      append users: {
         user: m.user.nick,
+        channel: m.channel.name,
         time: Time.now.utc,
         action: "leaving"
       }
@@ -47,6 +49,15 @@ class UserCount
     def record(data)
       filename = "#{data.keys.first}.yml"
       File.write(filename,data.to_yaml)
+    end
+
+    def append(data)
+      filename = "#{data.keys.first}.csv"
+      headers = data.values.first.keys
+
+      CSV.open(filename, "a", write_headers: true, headers: headers) do |csv|
+        csv << data.values.first.values
+      end
     end
 
   end

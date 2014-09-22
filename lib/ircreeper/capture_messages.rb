@@ -1,3 +1,4 @@
+require 'csv'
 
 module Ircreeper
   class CaptureMessages
@@ -6,34 +7,43 @@ module Ircreeper
     listen_to :connect, method: :on_connect
     listen_to :channel, method: :on_channel
 
-    def users
-      @users ||= {}
-    end
-
-    def on_connect(m)
-      # no-operation
-    end
-
     def on_channel(m)
-      info "Logging channel message for #{m.user.nick}"
-      seen = Seen.new(m.user.nick, m.channel, m.message, Time.new)
-      users[m.user.nick] = seen
-      save_message(seen)
+      seen = seen_object(m)
+
+      record last_message: {
+        time: seen.time,
+        channel: seen.channel.name,
+        user: seen.user,
+        message: seen.message
+      }
+
+      append messages: {
+        time: seen.time,
+        channel: seen.channel.name,
+        user: seen.user,
+        message: seen.message
+      }
     end
 
-    def save_message(seen)
-      File.open("messages.log","a") do |file|
-        file.sync = true
-        # TODO: the format should be a easily parseable
-        file.puts "#{seen.time.utc} #{seen.who} #{seen.where} : #{seen.what}"
+    def record(data)
+      filename = "#{data.keys.first}.yml"
+      File.write(filename,data.to_yaml)
+    end
+
+    def append(data)
+      filename = "#{data.keys.first}.csv"
+      headers = data.values.first.keys
+
+      CSV.open(filename, "a", write_headers: true, headers: headers) do |csv|
+        csv << data.values.first.values
       end
     end
 
-    class Seen < Struct.new(:who, :where, :what, :time)
-      def to_s
-        "[#{time.asctime}] #{who} was seen in #{where} saying #{what}"
-      end
+    def seen_object(m)
+      Seen.new(m.user.nick, m.channel, m.message, Time.now.utc)
     end
+
+    class Seen < Struct.new(:user, :channel, :message, :time) ; end
 
   end
 end
